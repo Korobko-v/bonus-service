@@ -1,0 +1,108 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1775770059-1
+      author: v.korobko
+      changes:
+        - createTable:
+            tableName: bonus_cards
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: card_number
+                  type: VARCHAR(50)
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_name
+                  type: VARCHAR(200)
+              - column:
+                  name: balance
+                  type: DECIMAL(15, 2)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+
+
+  - changeSet:
+      id: 1775770059-2
+      author: v.korobko
+      changes:
+        - createTable:
+            tableName: bonus_transactions
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: card_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_bonus_transactions_card
+                    references: bonus_cards(id)
+                    deleteCascade: true
+              - column:
+                  name: transaction_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(15, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: order_id
+                  type: VARCHAR(100)
+              - column:
+                  name: transaction_id
+                  type: VARCHAR(100)
+                  constraints:
+                    unique: true
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: COMPLETED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP

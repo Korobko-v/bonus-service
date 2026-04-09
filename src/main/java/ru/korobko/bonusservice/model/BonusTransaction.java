@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,7 +29,7 @@ public class BonusTransaction {
     private TransactionType type;
     
     @Column(name = "amount", nullable = false)
-    private BigDecimal amount;
+    private Double amount;
     
     @Column(name = "description")
     private String description;

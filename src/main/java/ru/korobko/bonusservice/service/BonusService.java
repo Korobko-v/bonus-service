@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.korobko.bonusservice.dto.BonusTransactionDto;
+import ru.korobko.bonusservice.dto.request.RefundRequest;
 import ru.korobko.bonusservice.dto.request.TransactionRequest;
 import ru.korobko.bonusservice.exception.BonusCardNotFoundException;
 import ru.korobko.bonusservice.exception.InsufficientBonusException;
@@ -44,7 +45,7 @@ public class BonusService {
                 request.getOrderId()
         );
 
-        card.setBalance(card.getBalance().add(request.getAmount()));
+        card.setBalance(card.getBalance() + request.getAmount());
         bonusCardRepository.save(card);
 
         BonusTransaction savedTransaction = bonusTransactionRepository.save(transaction);
@@ -74,7 +75,7 @@ public class BonusService {
                 request.getOrderId()
         );
 
-        card.setBalance(card.getBalance().subtract(request.getAmount()));
+        card.setBalance(card.getBalance() - request.getAmount());
         bonusCardRepository.save(card);
 
         BonusTransaction savedTransaction = bonusTransactionRepository.save(transaction);
@@ -84,8 +85,8 @@ public class BonusService {
     }
     
     @Transactional
-    public BonusTransactionDto refundBonus(TransactionRequest request) {
-        log.info("Возврат на карту: {}, сумма: {}", request.getCardNumber(), request.getAmount());
+    public BonusTransactionDto refundBonus(RefundRequest request) {
+        log.info("Возврат на карту: {}", request.getCardNumber());
         
         BonusCard card = findActiveCard(request.getCardNumber());
 
@@ -100,20 +101,21 @@ public class BonusService {
         }
 
         BonusTransaction.TransactionType refundType;
-        
+
+        Double originalTransactionAmount = originalTransaction.getAmount();
         if (originalTransaction.getType() == BonusTransaction.TransactionType.WRITE_OFF) {
             refundType = BonusTransaction.TransactionType.REFUND;
-            card.setBalance(card.getBalance().add(request.getAmount()));
+            card.setBalance(card.getBalance() + originalTransactionAmount);
         } else if (originalTransaction.getType() == BonusTransaction.TransactionType.ACCRUAL) {
             refundType = BonusTransaction.TransactionType.REFUND;
 
-            if (card.getBalance().compareTo(request.getAmount()) < 0) {
+            if (card.getBalance().compareTo(originalTransactionAmount) < 0) {
                 throw new InsufficientBonusException(
                         String.format("Недостаточно бонусов для возврата. Доступно: %s, Запрошено: %s",
-                                card.getBalance(), request.getAmount())
+                                card.getBalance(), originalTransactionAmount)
                 );
             }
-            card.setBalance(card.getBalance().subtract(request.getAmount()));
+            card.setBalance(card.getBalance() - originalTransactionAmount);
         } else {
             throw new InvalidTransactionException("Возврат возврата? Ты серьёзно?");
         }
@@ -121,7 +123,7 @@ public class BonusService {
         BonusTransaction refundTransaction = createTransaction(
                 card,
                 refundType,
-                request.getAmount(),
+                originalTransactionAmount,
                 request.getDescription() != null ? 
                         request.getDescription() : 
                         "Возврат для транзакции: " + originalTransaction.getTransactionId(),
@@ -160,7 +162,7 @@ public class BonusService {
     }
     
     private BonusCard findActiveCard(String cardNumber) {
-        return bonusCardRepository.findByCardNumber(cardNumber)
+        return bonusCardRepository.findByCardNumberAndIsActiveIsTrue(cardNumber)
                 .orElseThrow(() -> new BonusCardNotFoundException(
                         "Активная бонусная карта не найдена: " + cardNumber
                 ));
@@ -169,7 +171,7 @@ public class BonusService {
     private BonusTransaction createTransaction(
             BonusCard card,
             BonusTransaction.TransactionType type,
-            BigDecimal amount,
+            Double amount,
             String description,
             String orderId
     ) {
