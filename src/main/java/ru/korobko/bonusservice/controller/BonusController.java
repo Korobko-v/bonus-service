@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.korobko.bonusservice.dto.BonusTransactionDto;
+import ru.korobko.bonusservice.dto.request.RefundRequest;
 import ru.korobko.bonusservice.dto.request.TransactionRequest;
 import ru.korobko.bonusservice.dto.response.ApiResponse;
 import ru.korobko.bonusservice.service.BonusService;
@@ -44,7 +45,7 @@ public class BonusController {
     
     @PostMapping("/refund")
     public ResponseEntity<ApiResponse<BonusTransactionDto>> refundBonus(
-            @Valid @RequestBody TransactionRequest request) {
+            @Valid @RequestBody RefundRequest request) {
         
         BonusTransactionDto transaction = bonusService.refundBonus(request);
         

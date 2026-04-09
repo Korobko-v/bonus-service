@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +32,7 @@ public class BonusCard {
     private String clientName;
     
     @Column(name = "balance", nullable = false)
-    private BigDecimal balance;
+    private Double balance;
     
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
@@ -51,7 +50,7 @@ public class BonusCard {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        balance = BigDecimal.ZERO;
+        balance = 0.0;
         isActive = true;
     }
     
