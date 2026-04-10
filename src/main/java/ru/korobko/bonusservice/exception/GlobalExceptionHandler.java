@@ -14,6 +14,14 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessException(AccessException ex) {
+        log.error("Операция запрещена: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
     
     @ExceptionHandler(BonusCardNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleBonusCardNotFoundException(BonusCardNotFoundException ex) {
