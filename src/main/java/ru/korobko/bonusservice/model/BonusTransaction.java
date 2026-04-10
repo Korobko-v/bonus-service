@@ -73,6 +73,7 @@ public class BonusTransaction {
         PENDING,      // В обработке
         COMPLETED,    // Завершено
         CANCELLED,    // Отменено
-        FAILED        // Не удалось
+        FAILED,        // Не удалось
+        REFUND // Осуществлён возврат
     }
 }
