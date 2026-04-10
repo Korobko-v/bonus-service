@@ -1,0 +1,122 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1775821745-1
+      author: v.korobko
+      changes:
+        - createIndex:
+            tableName: bonus_cards
+            indexName: idx_bonus_cards_card_number
+            columns:
+              - column:
+                  name: card_number
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: bonus_cards
+                indexName: idx_bonus_cards_card_number
+
+  - changeSet:
+      id: 1775821745-2
+      author: v.korobko
+      changes:
+        - createIndex:
+            tableName: bonus_cards
+            indexName: idx_bonus_cards_client_id
+            columns:
+              - column:
+                  name: client_id
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: bonus_cards
+                indexName: idx_bonus_cards_client_id
+
+  - changeSet:
+      id: 1775821745-3
+      author: v.korobko
+      changes:
+        - createIndex:
+            tableName: bonus_cards
+            indexName: idx_bonus_cards_card_number_client_id
+            columns:
+              - column:
+                  name: card_number
+              - column:
+                  name: client_id
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: bonus_cards
+                indexName: idx_bonus_cards_card_number_client_id
+
+  - changeSet:
+      id: 1775821745-4
+      author: v.korobko
+      changes:
+        - createIndex:
+            tableName: bonus_transactions
+            indexName: idx_bonus_transactions_card_id
+            columns:
+              - column:
+                  name: card_id
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: bonus_transactions
+                indexName: idx_bonus_transactions_card_id
+
+  - changeSet:
+      id: 1775821745-5
+      author: v.korobko
+      changes:
+        - createIndex:
+            tableName: bonus_transactions
+            indexName: idx_bonus_transactions_created_at
+            columns:
+              - column:
+                  name: created_at
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: bonus_transactions
+                indexName: idx_bonus_transactions_created_at
+
+  - changeSet:
+      id: 1775821745-6
+      author: v.korobko
+      changes:
+        - createIndex:
+            tableName: bonus_transactions
+            indexName: idx_bonus_transactions_order_id
+            columns:
+              - column:
+                  name: order_id
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: bonus_transactions
+                indexName: idx_bonus_transactions_order_id
+  - changeSet:
+      id: 1775821745-7
+      author: v.korobko
+      changes:
+        - createIndex:
+            tableName: bonus_transactions
+            indexName: idx_bonus_transactions_card_id_amount
+            columns:
+              - column:
+                  name: card_id
+              - column:
+                  name: amount
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: bonus_transactions
+                indexName: idx_bonus_transactions_card_id_amount
