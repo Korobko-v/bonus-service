@@ -15,6 +15,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - bonus-network
+
+  app:
+    build: .
+    container_name: bonus-service-app
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bonus_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bonus-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+
+networks:
+  bonus-network:
+    driver: bridge
