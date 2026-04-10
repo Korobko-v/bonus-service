@@ -21,4 +21,11 @@ public interface BonusCardRepository extends JpaRepository<BonusCard, Long> {
     @Query("SELECT c.balance FROM BonusCard c WHERE c.cardNumber = :cardNumber")
     Optional<BigDecimal> findBalanceByCardNumber(@Param("cardNumber") String cardNumber);
 
+    @Query("SELECT c.balance FROM BonusCard c WHERE c.cardNumber = :cardNumber " +
+            "AND c.clientId = :clientId")
+    Optional<BigDecimal> findBalanceByCardNumberAndClientId(@Param("cardNumber") String cardNumber,
+                                                            @Param("clientId") Long clientId);
+
+    boolean existsByCardNumberAndIsActiveIsTrueAndClientId(String cardNumber, Long clientId);
+
 }

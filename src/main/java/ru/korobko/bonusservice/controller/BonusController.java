@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.korobko.bonusservice.dto.BonusTransactionDto;
 import ru.korobko.bonusservice.dto.request.RefundRequest;
@@ -22,6 +23,7 @@ public class BonusController {
     private final BonusService bonusService;
     
     @PostMapping("/accrue")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BonusTransactionDto>> accrueBonus(
             @Valid @RequestBody TransactionRequest request) {
         
@@ -33,6 +35,7 @@ public class BonusController {
     }
     
     @PostMapping("/write-off")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BonusTransactionDto>> writeOffBonus(
             @Valid @RequestBody TransactionRequest request) {
         
@@ -44,6 +47,7 @@ public class BonusController {
     }
     
     @PostMapping("/refund")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BonusTransactionDto>> refundBonus(
             @Valid @RequestBody RefundRequest request) {
         
@@ -54,23 +58,48 @@ public class BonusController {
                 .body(ApiResponse.success("Успешный возврат", transaction));
     }
     
-    @GetMapping("/balance/{cardNumber}")
-    public ResponseEntity<ApiResponse<BigDecimal>> getBalance(
+    @GetMapping("/balance/admin/{cardNumber}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BigDecimal>> getBalanceForAdmin(
             @PathVariable String cardNumber) {
         
-        BigDecimal balance = bonusService.getBalance(cardNumber);
+        BigDecimal balance = bonusService.getBalanceForAdmin(cardNumber);
         
         return ResponseEntity
                 .ok(ApiResponse.success("Информация о балансе получена", balance));
     }
-    
-    @GetMapping("/history/{cardNumber}")
-    public ResponseEntity<ApiResponse<List<BonusTransactionDto>>> getTransactionHistory(
+
+    @GetMapping("/balance/{cardNumber}")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BigDecimal>> getMyBalance(
+            @PathVariable String cardNumber) {
+
+        BigDecimal balance = bonusService.getMyBalance(cardNumber);
+
+        return ResponseEntity
+                .ok(ApiResponse.success("Информация о балансе получена", balance));
+    }
+
+
+    @GetMapping("/history/admin/{cardNumber}")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<BonusTransactionDto>>> getTransactionHistoryForAdmin(
             @PathVariable String cardNumber) {
         
-        List<BonusTransactionDto> history = bonusService.getTransactionHistory(cardNumber);
+        List<BonusTransactionDto> history = bonusService.getTransactionHistoryForAdmin(cardNumber);
         
         return ResponseEntity
                 .ok(ApiResponse.success("Информация об истории транзакций получена", history));
+    }
+
+    @GetMapping("/my-history/{cardNumber}")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<BonusTransactionDto>>> getMyTransactionHistory(
+            @PathVariable String cardNumber) {
+
+        List<BonusTransactionDto> history = bonusService.getMyTransactionHistory(cardNumber);
+
+        return ResponseEntity
+                .ok(ApiResponse.success("Информация об истории транзакций текущего пользователя получена", history));
     }
 }

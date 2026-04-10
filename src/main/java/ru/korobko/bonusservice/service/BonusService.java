@@ -2,19 +2,24 @@ package ru.korobko.bonusservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.korobko.bonusservice.dto.BonusTransactionDto;
 import ru.korobko.bonusservice.dto.request.RefundRequest;
 import ru.korobko.bonusservice.dto.request.TransactionRequest;
+import ru.korobko.bonusservice.exception.AccessException;
 import ru.korobko.bonusservice.exception.BonusCardNotFoundException;
 import ru.korobko.bonusservice.exception.InsufficientBonusException;
 import ru.korobko.bonusservice.exception.InvalidTransactionException;
 import ru.korobko.bonusservice.mapper.BonusTransactionMapper;
 import ru.korobko.bonusservice.model.BonusCard;
 import ru.korobko.bonusservice.model.BonusTransaction;
+import ru.korobko.bonusservice.model.User;
 import ru.korobko.bonusservice.repository.BonusCardRepository;
 import ru.korobko.bonusservice.repository.BonusTransactionRepository;
+import ru.korobko.bonusservice.repository.UserRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,18 +36,24 @@ public class BonusService {
     private final BonusCardRepository bonusCardRepository;
     private final BonusTransactionRepository bonusTransactionRepository;
     private final BonusTransactionMapper bonusTransactionMapper;
+    private final UserRepository userRepository;
     
     @Transactional
     public BonusTransactionDto accrueBonus(TransactionRequest request) {
+        BonusCard card = findActiveCard(request.getCardNumber());
+
+        if (card.getClientId().equals(getCurrentUser().getId())) {
+            throw new AccessException("Хочешь сам себе бонусов начислить, шалунишка?");
+        }
         log.info("Начисление бонусов на карту: {}, сумма: {}", request.getCardNumber(), request.getAmount());
+
         Optional<BonusTransaction> existing = bonusTransactionRepository
                 .findByOrderId(request.getOrderId());
         if (existing.isPresent()) {
-            log.warn("Бонусы по данному заказу уже начислены");
-            return bonusTransactionMapper.toDto(existing.get());
+            throw new InvalidTransactionException("Бонусы по данному заказу уже начислены");
         }
 
-        BonusCard card = findActiveCard(request.getCardNumber());
+
 
         BonusTransaction transaction = createTransaction(
                 card,
@@ -63,6 +74,10 @@ public class BonusService {
     
     @Transactional
     public BonusTransactionDto writeOffBonus(TransactionRequest request) {
+        BonusCard card = findActiveCard(request.getCardNumber());
+        if (card.getClientId().equals(getCurrentUser().getId())) {
+            throw new AccessException("Хочешь сам себе бонусов списать, бандит?");
+        }
         log.info("Списание бонусов с карты: {}, сумма: {}", request.getCardNumber(), request.getAmount());
         Optional<BonusTransaction> existing = bonusTransactionRepository
                 .findByOrderId(request.getOrderId());
@@ -70,8 +85,6 @@ public class BonusService {
             log.warn("Бонусы по данному заказу уже списаны");
             return bonusTransactionMapper.toDto(existing.get());
         }
-        
-        BonusCard card = findActiveCard(request.getCardNumber());
 
         if (card.getBalance().subtract(BigDecimal.valueOf(request.getAmount())).compareTo(BigDecimal.ZERO) < 0) {
             throw new InsufficientBonusException(
@@ -99,6 +112,11 @@ public class BonusService {
     
     @Transactional
     public BonusTransactionDto refundBonus(RefundRequest request) {
+        BonusCard card = findActiveCard(request.getCardNumber());
+
+        if (card.getClientId().equals(getCurrentUser().getId())) {
+            throw new AccessException("Хочешь сам себе бонусов вернуть, мошенник?");
+        }
         log.info("Возврат на карту: {}", request.getCardNumber());
         Optional<BonusTransaction> existing = bonusTransactionRepository
                 .findByOrderId(request.getOrderId());
@@ -106,8 +124,7 @@ public class BonusService {
             log.warn("Возврат по данному заказу уже осуществлён");
             return bonusTransactionMapper.toDto(existing.get());
         }
-        
-        BonusCard card = findActiveCard(request.getCardNumber());
+
 
         BonusTransaction originalTransaction = bonusTransactionRepository
                 .findByTransactionId(request.getOriginalTransactionId())
@@ -162,14 +179,24 @@ public class BonusService {
         return bonusTransactionMapper.toDto(savedTransaction);
     }
     
-    public BigDecimal getBalance(String cardNumber) {
+    public BigDecimal getBalanceForAdmin(String cardNumber) {
         log.info("Получение баланса по карте: {}", cardNumber);
 
         return bonusCardRepository.findBalanceByCardNumber(cardNumber)
-                .orElseThrow(()-> new BonusCardNotFoundException(String.format("Карта %s не найдена", cardNumber)));
+                .orElseThrow(()-> new BonusCardNotFoundException(String.format("Карта %s не найдена",
+                        cardNumber)));
+    }
+
+    public BigDecimal getMyBalance(String cardNumber) {
+        log.info("Получение баланса по карте: {}", cardNumber);
+
+        return bonusCardRepository.findBalanceByCardNumberAndClientId(cardNumber, getCurrentUser().getId())
+                .orElseThrow(()-> new BonusCardNotFoundException(String.format("Карта %s не найдена " +
+                                "или не принадлежит пользователю",
+                        cardNumber)));
     }
     
-    public List<BonusTransactionDto> getTransactionHistory(String cardNumber) {
+    public List<BonusTransactionDto> getTransactionHistoryForAdmin(String cardNumber) {
         log.info("Получение истории транзакции по карте: {}", cardNumber);
 
         if (!bonusCardRepository.existsByCardNumber(cardNumber)) {
@@ -179,6 +206,22 @@ public class BonusService {
         List<BonusTransaction> transactions = bonusTransactionRepository
                 .findHistoryByCardNumber(cardNumber);
         
+        return transactions.stream()
+                .map(bonusTransactionMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<BonusTransactionDto> getMyTransactionHistory(String cardNumber) {
+        log.info("Получение истории транзакции по карте: {}", cardNumber);
+
+        if (!bonusCardRepository.existsByCardNumberAndIsActiveIsTrueAndClientId(cardNumber,
+                getCurrentUser().getId())) {
+            throw new AccessException("Карта не найдена, неактивна или принадлежит другому пользователю");
+        }
+
+        List<BonusTransaction> transactions = bonusTransactionRepository
+                .findHistoryByCardNumber(cardNumber);
+
         return transactions.stream()
                 .map(bonusTransactionMapper::toDto)
                 .collect(Collectors.toList());
@@ -208,5 +251,20 @@ public class BonusService {
                 .status(BonusTransaction.TransactionStatus.COMPLETED)
                 .createdAt(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * Получение текущего авторизованного пользователя
+     */
+    private User getCurrentUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal instanceof UserDetails) {
+            String username = ((UserDetails) principal).getUsername();
+            return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        }
+
+        throw new RuntimeException("Пользователь не авторизован");
     }
 }
