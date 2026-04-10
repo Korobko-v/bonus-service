@@ -19,6 +19,7 @@ import ru.korobko.bonusservice.repository.BonusTransactionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,13 @@ public class BonusService {
     @Transactional
     public BonusTransactionDto accrueBonus(TransactionRequest request) {
         log.info("Начисление бонусов на карту: {}, сумма: {}", request.getCardNumber(), request.getAmount());
-        
+        Optional<BonusTransaction> existing = bonusTransactionRepository
+                .findByOrderId(request.getOrderId());
+        if (existing.isPresent()) {
+            log.warn("Бонусы по данному заказу уже начислены");
+            return bonusTransactionMapper.toDto(existing.get());
+        }
+
         BonusCard card = findActiveCard(request.getCardNumber());
 
         BonusTransaction transaction = createTransaction(
@@ -45,7 +52,7 @@ public class BonusService {
                 request.getOrderId()
         );
 
-        card.setBalance(card.getBalance() + request.getAmount());
+        card.setBalance(card.getBalance().add(BigDecimal.valueOf(request.getAmount())));
         bonusCardRepository.save(card);
 
         BonusTransaction savedTransaction = bonusTransactionRepository.save(transaction);
@@ -57,10 +64,16 @@ public class BonusService {
     @Transactional
     public BonusTransactionDto writeOffBonus(TransactionRequest request) {
         log.info("Списание бонусов с карты: {}, сумма: {}", request.getCardNumber(), request.getAmount());
+        Optional<BonusTransaction> existing = bonusTransactionRepository
+                .findByOrderId(request.getOrderId());
+        if (existing.isPresent()) {
+            log.warn("Бонусы по данному заказу уже списаны");
+            return bonusTransactionMapper.toDto(existing.get());
+        }
         
         BonusCard card = findActiveCard(request.getCardNumber());
 
-        if (card.getBalance().compareTo(request.getAmount()) < 0) {
+        if (card.getBalance().subtract(BigDecimal.valueOf(request.getAmount())).compareTo(BigDecimal.ZERO) < 0) {
             throw new InsufficientBonusException(
                     String.format("Недостаточно бонусов. Доступно: %s, Запрошено: %s",
                             card.getBalance(), request.getAmount())
@@ -75,7 +88,7 @@ public class BonusService {
                 request.getOrderId()
         );
 
-        card.setBalance(card.getBalance() - request.getAmount());
+        card.setBalance(card.getBalance().subtract(BigDecimal.valueOf(request.getAmount())));
         bonusCardRepository.save(card);
 
         BonusTransaction savedTransaction = bonusTransactionRepository.save(transaction);
@@ -87,6 +100,12 @@ public class BonusService {
     @Transactional
     public BonusTransactionDto refundBonus(RefundRequest request) {
         log.info("Возврат на карту: {}", request.getCardNumber());
+        Optional<BonusTransaction> existing = bonusTransactionRepository
+                .findByOrderId(request.getOrderId());
+        if (existing.isPresent()) {
+            log.warn("Возврат по данному заказу уже осуществлён");
+            return bonusTransactionMapper.toDto(existing.get());
+        }
         
         BonusCard card = findActiveCard(request.getCardNumber());
 
@@ -100,22 +119,26 @@ public class BonusService {
             throw new InvalidTransactionException("Транзакция не принадлежит данной карте");
         }
 
+        if (BonusTransaction.TransactionStatus.REFUND.equals(originalTransaction.getStatus())) {
+            throw new InvalidTransactionException("Повторный возврат невозможен");
+        }
+
         BonusTransaction.TransactionType refundType;
 
         Double originalTransactionAmount = originalTransaction.getAmount();
         if (originalTransaction.getType() == BonusTransaction.TransactionType.WRITE_OFF) {
             refundType = BonusTransaction.TransactionType.REFUND;
-            card.setBalance(card.getBalance() + originalTransactionAmount);
+            card.setBalance(card.getBalance().add(BigDecimal.valueOf(originalTransactionAmount)));
         } else if (originalTransaction.getType() == BonusTransaction.TransactionType.ACCRUAL) {
             refundType = BonusTransaction.TransactionType.REFUND;
 
-            if (card.getBalance().compareTo(originalTransactionAmount) < 0) {
+            if (card.getBalance().compareTo(BigDecimal.valueOf(originalTransactionAmount)) < 0) {
                 throw new InsufficientBonusException(
                         String.format("Недостаточно бонусов для возврата. Доступно: %s, Запрошено: %s",
                                 card.getBalance(), originalTransactionAmount)
                 );
             }
-            card.setBalance(card.getBalance() - originalTransactionAmount);
+            card.setBalance(card.getBalance().subtract(BigDecimal.valueOf(originalTransactionAmount)));
         } else {
             throw new InvalidTransactionException("Возврат возврата? Ты серьёзно?");
         }
