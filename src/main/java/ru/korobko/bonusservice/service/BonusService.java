@@ -37,7 +37,12 @@ public class BonusService {
     private final BonusTransactionRepository bonusTransactionRepository;
     private final BonusTransactionMapper bonusTransactionMapper;
     private final UserRepository userRepository;
-    
+
+    /**
+     * Начисление бонуса
+     * @param request запрос транзакции
+     * @return транзакция
+     */
     @Transactional
     public BonusTransactionDto accrueBonus(TransactionRequest request) {
         BonusCard card = findActiveCard(request.getCardNumber());
@@ -71,7 +76,12 @@ public class BonusService {
         log.info("Бонусы начислены успешно. Баланс: {}", card.getBalance());
         return bonusTransactionMapper.toDto(savedTransaction);
     }
-    
+
+    /**
+     * Списание бонусов с карты
+     * @param request запрос
+     * @return транзакция
+     */
     @Transactional
     public BonusTransactionDto writeOffBonus(TransactionRequest request) {
         BonusCard card = findActiveCard(request.getCardNumber());
@@ -109,7 +119,12 @@ public class BonusService {
         log.info("Бонусы списаны успешно. Баланс: {}", card.getBalance());
         return bonusTransactionMapper.toDto(savedTransaction);
     }
-    
+
+    /**
+     * Возврат бонусов
+     * @param request запрос на возврат
+     * @return транзакция возврата
+     */
     @Transactional
     public BonusTransactionDto refundBonus(RefundRequest request) {
         BonusCard card = findActiveCard(request.getCardNumber());
@@ -178,7 +193,12 @@ public class BonusService {
         log.info("Успешный возврат. Баланс: {}", card.getBalance());
         return bonusTransactionMapper.toDto(savedTransaction);
     }
-    
+
+    /**
+     * Баланс по номеру карты (доступно только админу)
+     * @param cardNumber номер карты
+     * @return сумма бонусов на карте
+     */
     public BigDecimal getBalanceForAdmin(String cardNumber) {
         log.info("Получение баланса по карте: {}", cardNumber);
 
@@ -187,6 +207,11 @@ public class BonusService {
                         cardNumber)));
     }
 
+    /**
+     * Сумма бонусов на карте текущего пользователя
+     * @param cardNumber номер карты
+     * @return сумма бонусов на карте
+     */
     public BigDecimal getMyBalance(String cardNumber) {
         log.info("Получение баланса по карте: {}", cardNumber);
 
@@ -195,7 +220,12 @@ public class BonusService {
                                 "или не принадлежит пользователю",
                         cardNumber)));
     }
-    
+
+    /**
+     * История транзакции по карте (доступно только админу)
+     * @param cardNumber номер карты
+     * @return список транзакций
+     */
     public List<BonusTransactionDto> getTransactionHistoryForAdmin(String cardNumber) {
         log.info("Получение истории транзакции по карте: {}", cardNumber);
 
@@ -211,6 +241,11 @@ public class BonusService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Получение истории транзакции текущего пользователя по карте
+     * @param cardNumber номер карты
+     * @return список транзакций
+     */
     public List<BonusTransactionDto> getMyTransactionHistory(String cardNumber) {
         log.info("Получение истории транзакции по карте: {}", cardNumber);
 
@@ -226,14 +261,28 @@ public class BonusService {
                 .map(bonusTransactionMapper::toDto)
                 .collect(Collectors.toList());
     }
-    
+
+    /**
+     * Получение активной карты по номеру
+     * @param cardNumber номер карты
+     * @return бонусная карта
+     */
     private BonusCard findActiveCard(String cardNumber) {
         return bonusCardRepository.findByCardNumberAndIsActiveIsTrue(cardNumber)
                 .orElseThrow(() -> new BonusCardNotFoundException(
                         "Активная бонусная карта не найдена: " + cardNumber
                 ));
     }
-    
+
+    /**
+     * Создать транзакцию
+     * @param card карта
+     * @param type тип транзакции (Пополнение|Списание/Возврат)
+     * @param amount сумма
+     * @param description описание
+     * @param orderId идентификатор заказа
+     * @return созданная транзакция
+     */
     private BonusTransaction createTransaction(
             BonusCard card,
             BonusTransaction.TransactionType type,

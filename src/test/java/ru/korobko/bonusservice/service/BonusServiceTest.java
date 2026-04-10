@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -17,7 +16,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import ru.korobko.bonusservice.dto.BonusTransactionDto;
 import ru.korobko.bonusservice.dto.request.RefundRequest;
 import ru.korobko.bonusservice.dto.request.TransactionRequest;
-import ru.korobko.bonusservice.exception.*;
+import ru.korobko.bonusservice.exception.AccessException;
+import ru.korobko.bonusservice.exception.BonusCardNotFoundException;
+import ru.korobko.bonusservice.exception.InsufficientBonusException;
+import ru.korobko.bonusservice.exception.InvalidTransactionException;
 import ru.korobko.bonusservice.mapper.BonusTransactionMapper;
 import ru.korobko.bonusservice.model.BonusCard;
 import ru.korobko.bonusservice.model.BonusTransaction;
@@ -33,7 +35,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
