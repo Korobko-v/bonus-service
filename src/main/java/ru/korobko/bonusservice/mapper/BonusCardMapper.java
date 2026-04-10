@@ -10,7 +10,4 @@ public interface BonusCardMapper {
 
     @Mapping(source = "active", target = "isActive")
     BonusCardDto toDto(BonusCard bonusCard);
-    
-    @Mapping(target = "transactions", ignore = true)
-    BonusCard toEntity(BonusCardDto bonusCardDto);
 }
