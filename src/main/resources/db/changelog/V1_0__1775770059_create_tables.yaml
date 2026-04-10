@@ -20,7 +20,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: client_id
-                  type: VARCHAR(100)
+                  type: BIGSERIAL
                   constraints:
                     nullable: false
               - column:

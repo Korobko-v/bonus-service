@@ -27,7 +27,7 @@ public class BonusCard {
     private String cardNumber;
     
     @Column(name = "client_id", nullable = false)
-    private String clientId;
+    private Long clientId;
     
     @Column(name = "client_name")
     private String clientName;
