@@ -5,3 +5,6 @@ databaseChangeLog:
   - include:
       file: V1_0__1775809905_create_users.yaml
       relativeToChangelogFile: true
+  - include:
+      file: V1_0__1775821745_create_indexes.yaml
+      relativeToChangelogFile: true
