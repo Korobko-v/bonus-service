@@ -6,10 +6,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import ru.korobko.bonusservice.dto.BonusCardDto;
 import ru.korobko.bonusservice.dto.BonusTransactionDto;
+import ru.korobko.bonusservice.dto.request.CreateCardRequest;
 import ru.korobko.bonusservice.dto.request.RefundRequest;
 import ru.korobko.bonusservice.dto.request.TransactionRequest;
 import ru.korobko.bonusservice.dto.response.ApiResponse;
+import ru.korobko.bonusservice.service.BonusCardService;
 import ru.korobko.bonusservice.service.BonusService;
 
 import java.math.BigDecimal;
@@ -21,6 +24,17 @@ import java.util.List;
 public class BonusController {
     
     private final BonusService bonusService;
+    private final BonusCardService bonusCardService;
+
+    @PostMapping("/admin/card")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BonusCardDto>> createCard(
+            @Valid @RequestBody CreateCardRequest request) {
+        BonusCardDto card = bonusCardService.createCard(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Карта успешно создана", card));
+    }
     
     @PostMapping("/accrue")
     @PreAuthorize("hasRole('ADMIN')")
@@ -101,5 +115,12 @@ public class BonusController {
 
         return ResponseEntity
                 .ok(ApiResponse.success("Информация об истории транзакций текущего пользователя получена", history));
+    }
+
+    @PatchMapping("/admin/card/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deactivateCard(@PathVariable Long id) {
+        bonusCardService.deactivateCard(id);
+        return ResponseEntity.ok(ApiResponse.success("Карта деактивирована", null));
     }
 }

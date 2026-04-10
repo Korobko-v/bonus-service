@@ -7,7 +7,8 @@ import ru.korobko.bonusservice.model.BonusCard;
 
 @Mapper(componentModel = "spring")
 public interface BonusCardMapper {
-    
+
+    @Mapping(source = "active", target = "isActive")
     BonusCardDto toDto(BonusCard bonusCard);
     
     @Mapping(target = "transactions", ignore = true)

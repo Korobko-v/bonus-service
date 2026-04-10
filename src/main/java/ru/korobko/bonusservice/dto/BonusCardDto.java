@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class BonusCardDto {
     private Long id;
     private String cardNumber;
-    private String clientId;
+    private Long clientId;
     private String clientName;
     private BigDecimal balance;
     private boolean isActive;
