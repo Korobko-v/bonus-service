@@ -18,7 +18,7 @@ REST-сервис для управления бонусными картами 
 ## 🏗️ Архитектура
 
 ### Технологический стек:
-- **Java 17+** с Spring Boot 3.x
+- **Java 17+** с Spring Boot 3.3.5
 - **PostgreSQL** - основная база данных
 - **Liquibase** - управление миграциями
 - **Spring Security** - аутентификация и авторизация
@@ -145,7 +145,7 @@ src/
 mvn clean package
 
 # Запуск приложения
-java -jar target/bonus-service-*.jar
+java -jar target/bonus-service-0.0.1-SNAPSHOT.jar
 ```
 
 Apply

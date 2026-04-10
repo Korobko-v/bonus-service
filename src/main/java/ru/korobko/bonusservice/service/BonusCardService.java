@@ -24,6 +24,11 @@ public class BonusCardService {
     private final BonusCardRepository bonusCardRepository;
     private final BonusCardMapper bonusCardMapper;
 
+    /**
+     * Создание карты (доступно только админу)
+     * @param request запрос на создание карты
+     * @return созданная карта
+     */
     @Transactional
     public BonusCardDto createCard(CreateCardRequest request) {
         log.info("Создание новой карты: {}", request.getCardNumber());
