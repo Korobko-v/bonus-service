@@ -96,7 +96,7 @@ public class BonusController {
 
 
     @GetMapping("/history/admin/{cardNumber}")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<BonusTransactionDto>>> getTransactionHistoryForAdmin(
             @PathVariable String cardNumber) {
         
