@@ -51,7 +51,6 @@ public class BonusCard {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        balance = BigDecimal.ZERO;
     }
     
     @PreUpdate
