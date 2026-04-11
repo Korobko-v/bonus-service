@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import ru.korobko.bonusservice.model.BonusCard;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -27,5 +28,7 @@ public interface BonusCardRepository extends JpaRepository<BonusCard, Long> {
                                                             @Param("clientId") Long clientId);
 
     boolean existsByCardNumberAndIsActiveIsTrueAndClientId(String cardNumber, Long clientId);
+
+    List<BonusCard> findAllByClientId(Long clientId);
 
 }

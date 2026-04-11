@@ -15,6 +15,7 @@ import ru.korobko.bonusservice.repository.BonusCardRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -63,5 +64,31 @@ public class BonusCardService {
         }
 
         card.setActive(false);
+    }
+
+    @Transactional
+    public void activateCard(Long id) {
+        BonusCard card = bonusCardRepository.findById(id)
+                .orElseThrow(() -> new BonusCardNotFoundException("Карта не найдена, ID: " + id));
+
+        if (card.isActive()) {
+            throw new InvalidTransactionException("Карта уже активирована");
+        }
+
+        card.setActive(true);
+    }
+
+    public List<BonusCardDto> getAllCards() {
+        log.info("Получение всех карт");
+        return bonusCardRepository.findAll().stream()
+                .map(bonusCardMapper::toDto)
+                .toList();
+    }
+
+    public List<BonusCardDto> getAllCardsByClientId(Long clientId) {
+        log.info("Получение всех карт клиента с ID: {}", clientId);
+        return bonusCardRepository.findAllByClientId(clientId).stream()
+                .map(bonusCardMapper::toDto)
+                .toList();
     }
 }

@@ -263,6 +263,22 @@ public class BonusService {
     }
 
     /**
+     * Получение всех транзакций пользователя
+     * @param username имя пользователя
+     * @return список транзакций
+     */
+    public List<BonusTransactionDto> findAllByUsername(String username) {
+        log.info("Получение всех транзакций пользователя: {}", username);
+
+        List<BonusTransaction> transactions = bonusTransactionRepository
+                .findAllByUsername(username);
+
+        return transactions.stream()
+                .map(bonusTransactionMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Получение активной карты по номеру
      * @param cardNumber номер карты
      * @return бонусная карта

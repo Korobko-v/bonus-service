@@ -19,4 +19,8 @@ public interface BonusTransactionRepository extends JpaRepository<BonusTransacti
     @Query("SELECT t FROM BonusTransaction t WHERE t.bonusCard.cardNumber = :cardNumber " +
            "ORDER BY t.createdAt DESC")
     List<BonusTransaction> findHistoryByCardNumber(@Param("cardNumber") String cardNumber);
+
+    @Query("SELECT t FROM BonusTransaction t WHERE t.bonusCard.clientName = :username " +
+           "ORDER BY t.createdAt DESC")
+    List<BonusTransaction> findAllByUsername(String username);
 }
