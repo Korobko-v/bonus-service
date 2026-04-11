@@ -165,7 +165,44 @@ Execution Time: 84.147 ms
 
 ## 📋 Итоги оптимизации
 
-| Запрос | Время до оптимизации | Время после оптимизации | Ускорение |
-|--------|---------------------|------------------------|-----------|
-| История транзакций | 24.289 мс | 4.162 мс | **6x** |
-| Топ-10 активных карт | 2956.350 мс | 84.147 мс | **35x** |
+| Запрос                 | Время до оптимизации | Время после оптимизации | Ускорение |
+|------------------------|---------------------|------------------------|-----------|
+| История транзакций     | 24.289 мс | 4.162 мс | **6x**    |
+| Топ-10 активных карт   | 2956.350 мс | 84.147 мс | **35x**   |
+| Поиск по номеру заказа | 80.570 мс | 0.052 мс | **1549x** |
+
+## 📊 Запрос 3: Поиск по id заказа
+
+### SQL-запрос:
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM bonus_transactions WHERE order_id = 'ORDER-500000';
+```
+
+### 📉 До добавления индексов:
+
+```
+Gather  (cost=1000.00..40533.55 rows=1 width=136) (actual time=63.981..80.548 rows=2 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=15665 read=18649 dirtied=17157 written=1396
+  ->  Parallel Seq Scan on bonus_transactions  (cost=0.00..39533.45 rows=1 width=136) (actual time=50.794..71.009 rows=1 loops=3)
+        Filter: ((order_id)::text = 'ORDER-500000'::text)
+        Rows Removed by Filter: 666666
+        Buffers: shared hit=15665 read=18649 dirtied=17157 written=1396
+Planning:
+  Buffers: shared hit=98 read=6 dirtied=1
+Planning Time: 0.890 ms
+Execution Time: 80.570 ms
+```
+### 📈 После добавления индексов:
+
+```
+Index Scan using idx_bonus_transactions_order_id on bonus_transactions  (cost=0.43..11.78 rows=2 width=136) (actual time=0.031..0.033 rows=2 loops=1)
+  Index Cond: ((order_id)::text = 'ORDER-500000'::text)
+  Buffers: shared hit=1 read=4
+Planning:
+  Buffers: shared hit=88 read=1
+Planning Time: 0.607 ms
+Execution Time: 0.052 ms
+```
