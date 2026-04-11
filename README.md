@@ -59,15 +59,15 @@ REST-сервис для управления бонусными картами 
 
 #### Добавленные индексы для оптимизации:
 
-| Таблица | Индекс | Назначение |
-|---------|---------|------------|
-| `bonus_cards` | `idx_bonus_cards_card_number` | Ускорение поиска по номеру карты |
-| `bonus_cards` | `idx_bonus_cards_client_id` | Ускорение поиска по владельцу |
-| `bonus_cards` | `idx_bonus_cards_card_number_client_id` | Составной индекс для проверки доступа |
-| `bonus_transactions` | `idx_bonus_transactions_card_id` | Ускорение JOIN с картами |
-| `bonus_transactions` | `idx_bonus_transactions_created_at` | Ускорение сортировки по дате |
-| `bonus_transactions` | `idx_bonus_transactions_order_id` | Идемпотентность транзакций |
-| `bonus_transactions` | `idx_bonus_transactions_card_id_amount` | Ускорение поиска транзакции по сумме и карте |
+| Таблица | Индекс | Назначение                                                       |
+|---------|---------|------------------------------------------------------------------|
+| `bonus_cards` | `idx_bonus_cards_card_number` | Ускорение поиска по номеру карты                                 |
+| `bonus_cards` | `idx_bonus_cards_client_id` | Ускорение поиска по владельцу                                    |
+| `bonus_cards` | `idx_bonus_cards_card_number_client_id` | Составной индекс для проверки доступа                            |
+| `bonus_transactions` | `idx_bonus_transactions_card_id` | Ускорение JOIN с картами                                         |
+| `bonus_transactions` | `idx_bonus_transactions_created_at` | Ускорение сортировки по дате                                     |
+| `bonus_transactions` | `idx_bonus_transactions_order_id` | Идемпотентность транзакций (быстрый поиск при проверке на дубль) |
+| `bonus_transactions` | `idx_bonus_transactions_card_id_amount` | Ускорение поиска транзакции по сумме и карте     |
 
 Анализ производительности запросов до и после добавления индексов представлен в файле `explain_analyze.md`.
 
