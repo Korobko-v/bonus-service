@@ -12,10 +12,8 @@ public class VaadinSecurityConfig extends VaadinWebSecurity {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        // Настройка для Vaadin
         super.configure(http);
 
-        // Устанавливаем страницу логина
         setLoginView(http, LoginView.class);
     }
 }

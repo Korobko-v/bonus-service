@@ -77,12 +77,10 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
                         )
                 );
 
-                // Сохраняем аутентификацию в SecurityContext
                 SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
                 securityContext.setAuthentication(authentication);
                 SecurityContextHolder.setContext(securityContext);
 
-                // Сохраняем в HttpSession (для Vaadin)
                 HttpServletRequest httpRequest = VaadinServletRequest.getCurrent().getHttpServletRequest();
                 httpRequest.getSession().setAttribute(
                         HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
@@ -92,12 +90,10 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
                 UserDetails userDetails = (UserDetails) authentication.getPrincipal();
                 String jwt = jwtUtil.generateToken(userDetails);
 
-                // Сохраняем токен в localStorage
                 UI.getCurrent().getPage().executeJs("localStorage.setItem('token', $0)", jwt);
 
                 Notification.show("Добро пожаловать, " + userDetails.getUsername() + "!");
 
-                // Редирект на главную
                 UI.getCurrent().navigate("");
 
             } catch (Exception ex) {

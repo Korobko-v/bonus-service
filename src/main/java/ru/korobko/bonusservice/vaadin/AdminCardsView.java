@@ -88,16 +88,13 @@ public class AdminCardsView extends VerticalLayout {
             return historyBtn;
         }).setHeader("История");
 
-        // Кнопки операций
         grid.addComponentColumn(card -> {
             HorizontalLayout actions = new HorizontalLayout();
 
-            // Начисление
             Button accrueBtn = new Button("+");
             accrueBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_TERTIARY);
             accrueBtn.addClickListener(e -> showTransactionDialog(card, "accrue"));
 
-            // Списание
             Button writeOffBtn = new Button("-");
             writeOffBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
             writeOffBtn.addClickListener(e -> showTransactionDialog(card, "writeoff"));
@@ -106,7 +103,6 @@ public class AdminCardsView extends VerticalLayout {
             return actions;
         }).setHeader("Операции");
 
-        // Кнопка активации/деактивации
         grid.addComponentColumn(card -> {
             Button actionBtn;
             if (card.isActive()) {
@@ -127,7 +123,7 @@ public class AdminCardsView extends VerticalLayout {
                 });
             }
             return actionBtn;
-        }).setHeader("Статус");
+        }).setHeader("Действия");
     }
 
     private void showTransactionDialog(BonusCardDto card, String type) {
