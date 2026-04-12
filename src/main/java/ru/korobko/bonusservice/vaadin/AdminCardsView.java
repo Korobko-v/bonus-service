@@ -1,5 +1,6 @@
 package ru.korobko.bonusservice.vaadin;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -14,14 +15,18 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.korobko.bonusservice.dto.BonusCardDto;
 import ru.korobko.bonusservice.dto.request.CreateCardRequest;
+import ru.korobko.bonusservice.dto.request.TransactionRequest;
 import ru.korobko.bonusservice.service.BonusCardService;
+import ru.korobko.bonusservice.service.BonusService;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Route(value = "admin/cards", layout = MainLayout.class)
 @PageTitle("Управление картами")
@@ -29,12 +34,14 @@ import java.util.List;
 public class AdminCardsView extends VerticalLayout {
 
     private final BonusCardService bonusCardService;
+    private final BonusService bonusService;
     private final Grid<BonusCardDto> grid = new Grid<>(BonusCardDto.class);
     private final TextField filter = new TextField("Фильтр по номеру");
 
     @Autowired
-    public AdminCardsView(BonusCardService bonusCardService) {
+    public AdminCardsView(BonusCardService bonusCardService, BonusService bonusService) {
         this.bonusCardService = bonusCardService;
+        this.bonusService = bonusService;
 
         setSizeFull();
 
@@ -70,6 +77,36 @@ public class AdminCardsView extends VerticalLayout {
             return status;
         })).setHeader("Статус");
 
+        // Кнопка "История транзакций"
+        grid.addComponentColumn(card -> {
+            Button historyBtn = new Button("История");
+            historyBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            historyBtn.addClickListener(e -> {
+                UI.getCurrent().navigate(TransactionHistoryForCardView.class,
+                        new RouteParameters("cardNumber", card.getCardNumber()));
+            });
+            return historyBtn;
+        }).setHeader("История");
+
+        // Кнопки операций
+        grid.addComponentColumn(card -> {
+            HorizontalLayout actions = new HorizontalLayout();
+
+            // Начисление
+            Button accrueBtn = new Button("+");
+            accrueBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_TERTIARY);
+            accrueBtn.addClickListener(e -> showTransactionDialog(card, "accrue"));
+
+            // Списание
+            Button writeOffBtn = new Button("-");
+            writeOffBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
+            writeOffBtn.addClickListener(e -> showTransactionDialog(card, "writeoff"));
+
+            actions.add(accrueBtn, writeOffBtn);
+            return actions;
+        }).setHeader("Операции");
+
+        // Кнопка активации/деактивации
         grid.addComponentColumn(card -> {
             Button actionBtn;
             if (card.isActive()) {
@@ -90,7 +127,51 @@ public class AdminCardsView extends VerticalLayout {
                 });
             }
             return actionBtn;
-        }).setHeader("Действия");
+        }).setHeader("Статус");
+    }
+
+    private void showTransactionDialog(BonusCardDto card, String type) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle(type.equals("accrue") ? "Начисление бонусов" : "Списание бонусов");
+
+        BigDecimalField amountField = new BigDecimalField("Сумма");
+        amountField.setValue(BigDecimal.valueOf(100));
+        amountField.setRequired(true);
+
+        TextField descriptionField = new TextField("Описание");
+        descriptionField.setPlaceholder("Необязательно");
+
+        TextField orderIdField = new TextField("ID заказа");
+        orderIdField.setValue(UUID.randomUUID().toString());
+        orderIdField.setRequired(true);
+
+        Button submitBtn = new Button("Выполнить", e -> {
+            try {
+                TransactionRequest request = new TransactionRequest();
+                request.setCardNumber(card.getCardNumber());
+                request.setAmount(amountField.getValue().doubleValue());
+                request.setDescription(descriptionField.getValue());
+                request.setOrderId(orderIdField.getValue());
+
+                if (type.equals("accrue")) {
+                    bonusService.accrueBonus(request);
+                    Notification.show("Начислено " + amountField.getValue() + " бонусов");
+                } else {
+                    bonusService.writeOffBonus(request);
+                    Notification.show("Списано " + amountField.getValue() + " бонусов");
+                }
+                dialog.close();
+                refreshGrid();
+            } catch (Exception ex) {
+                Notification.show("Ошибка: " + ex.getMessage());
+            }
+        });
+        submitBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        Button cancelBtn = new Button("Отмена", e -> dialog.close());
+
+        dialog.add(amountField, descriptionField, orderIdField, new HorizontalLayout(submitBtn, cancelBtn));
+        dialog.open();
     }
 
     private void showCreateDialog() {

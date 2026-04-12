@@ -1,17 +1,25 @@
 package ru.korobko.bonusservice.vaadin;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinServletRequest;
+import com.vaadin.flow.server.VaadinServletResponse;
 import jakarta.annotation.security.PermitAll;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 
 @Route("")
 @PageTitle("Бонусная система - Главное меню")
@@ -49,14 +57,9 @@ public class MainMenuView extends VerticalLayout {
             Paragraph welcome = new Paragraph("Добро пожаловать, " + username + "!");
             welcome.getStyle().set("margin-bottom", "1em");
 
-            Button logoutBtn = new Button("Выйти");
-            logoutBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
-            logoutBtn.addClickListener(e -> {
-                SecurityContextHolder.clearContext();
-                UI.getCurrent().getPage().executeJs(
-                        "localStorage.removeItem('token'); window.location.href=''"
-                );
-            });
+            Button logoutButton = new Button("Выйти", new Icon(VaadinIcon.SIGN_OUT));
+            logoutButton.setVisible(isAuthenticated);
+            logoutButton.addClickListener(e -> logout());
 
             Button myCardsBtn = new Button("Мои карты", e -> UI.getCurrent().navigate("my-cards"));
             Button myTransactionsBtn = new Button("История операций", e -> UI.getCurrent().navigate("my-transactions"));
@@ -71,7 +74,7 @@ public class MainMenuView extends VerticalLayout {
                 adminButtons.setJustifyContentMode(JustifyContentMode.CENTER);
                 adminButtons.getStyle().set("margin-top", "1em");
 
-                add(title, welcome, adminButtons, logoutBtn);
+                add(title, welcome, adminButtons, logoutButton);
             } else {
 
                 myCardsBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -81,8 +84,26 @@ public class MainMenuView extends VerticalLayout {
                 userButtons.setJustifyContentMode(JustifyContentMode.CENTER);
                 userButtons.getStyle().set("margin-top", "1em");
 
-                add(title, welcome, userButtons, logoutBtn);
+                add(title, welcome, userButtons, logoutButton);
             }
+        }
+    }
+
+    private void logout() {
+        try {
+            HttpServletRequest request = VaadinServletRequest.getCurrent().getHttpServletRequest();
+            HttpServletResponse response = VaadinServletResponse.getCurrent().getHttpServletResponse();
+
+            SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
+            logoutHandler.logout(request, response, SecurityContextHolder.getContext().getAuthentication());
+
+            SecurityContextHolder.clearContext();
+
+            UI.getCurrent().getPage().executeJs(
+                    "localStorage.removeItem('token'); window.location.href=''"
+            );
+        } catch (Exception e) {
+            UI.getCurrent().getPage().executeJs("window.location.href=''");
         }
     }
 

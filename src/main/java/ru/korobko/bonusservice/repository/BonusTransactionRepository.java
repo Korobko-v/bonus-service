@@ -16,8 +16,10 @@ public interface BonusTransactionRepository extends JpaRepository<BonusTransacti
 
     Optional<BonusTransaction> findByOrderId(String orderId);
 
-    @Query("SELECT t FROM BonusTransaction t WHERE t.bonusCard.cardNumber = :cardNumber " +
-           "ORDER BY t.createdAt DESC")
+    @Query("SELECT t FROM BonusTransaction t " +
+            "JOIN FETCH t.bonusCard c " +
+            "WHERE c.cardNumber = :cardNumber " +
+            "ORDER BY t.createdAt DESC")
     List<BonusTransaction> findHistoryByCardNumber(@Param("cardNumber") String cardNumber);
 
     @Query("SELECT t FROM BonusTransaction t WHERE t.bonusCard.clientName = :username " +

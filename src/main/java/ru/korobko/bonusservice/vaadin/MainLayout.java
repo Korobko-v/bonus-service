@@ -15,6 +15,11 @@ import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import com.vaadin.flow.server.VaadinServletRequest;
+import com.vaadin.flow.server.VaadinServletResponse;
 
 public class MainLayout extends AppLayout {
 
@@ -30,23 +35,18 @@ public class MainLayout extends AppLayout {
                 LumoUtility.Margin.MEDIUM
         );
 
-        // Клик по логотипу — возврат на главную
         logo.getStyle().set("cursor", "pointer");
         logo.addClickListener(e -> UI.getCurrent().navigate(""));
 
         String username = getCurrentUsername();
-        Span userSpan = new Span("Пользователь: " + (username != null ? username : "Гость"));
+        boolean isAuthenticated = username != null && !username.equals("anonymousUser");
+
+        Span userSpan = new Span("Пользователь: " + (isAuthenticated ? username : "Гость"));
         userSpan.addClassNames(LumoUtility.Margin.MEDIUM);
 
         Button logoutButton = new Button("Выйти", new Icon(VaadinIcon.SIGN_OUT));
-        logoutButton.addClickListener(e -> {
-            // Очищаем контекст безопасности
-            SecurityContextHolder.clearContext();
-            // Очищаем localStorage и перенаправляем на главную
-            UI.getCurrent().getPage().executeJs(
-                    "localStorage.removeItem('token'); window.location.href=''"
-            );
-        });
+        logoutButton.setVisible(isAuthenticated);
+        logoutButton.addClickListener(e -> logout());
 
         HorizontalLayout header = new HorizontalLayout(
                 new DrawerToggle(),
@@ -66,8 +66,25 @@ public class MainLayout extends AppLayout {
         addToNavbar(header);
     }
 
+    private void logout() {
+        try {
+            HttpServletRequest request = VaadinServletRequest.getCurrent().getHttpServletRequest();
+            HttpServletResponse response = VaadinServletResponse.getCurrent().getHttpServletResponse();
+
+            SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
+            logoutHandler.logout(request, response, SecurityContextHolder.getContext().getAuthentication());
+
+            SecurityContextHolder.clearContext();
+
+            UI.getCurrent().getPage().executeJs(
+                    "localStorage.removeItem('token'); window.location.href=''"
+            );
+        } catch (Exception e) {
+            UI.getCurrent().getPage().executeJs("window.location.href=''");
+        }
+    }
+
     private void createDrawer() {
-        // Получаем аутентификацию из SecurityContext
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = auth != null &&
                 auth.isAuthenticated() &&
@@ -100,14 +117,15 @@ public class MainLayout extends AppLayout {
 
     private String getCurrentUsername() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return null;
+        if (auth == null) return "Гость";
 
         Object principal = auth.getPrincipal();
         if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
             return ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
         } else if (principal instanceof String) {
-            return (String) principal;
+            String username = (String) principal;
+            return username.equals("anonymousUser") ? "Гость" : username;
         }
-        return null;
+        return "Гость";
     }
 }
